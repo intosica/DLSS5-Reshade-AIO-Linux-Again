@@ -6,7 +6,7 @@
 #include <wrl/client.h>
 #include <cstdio>
 
-#include "../addon/include/nvof-motion-provider.hpp"
+#include "../include/nvof-motion-provider.hpp"
 
 using Microsoft::WRL::ComPtr;
 
