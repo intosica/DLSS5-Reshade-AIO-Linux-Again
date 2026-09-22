@@ -26,3 +26,4 @@ release/verify-*/
 # Closed-source NVIDIA runtimes are supplied locally, never committed.
 runtime/*.dll
 runtime/*.bin
+build/
