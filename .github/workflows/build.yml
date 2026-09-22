@@ -1,25 +1,31 @@
-name: Build Windows Addon
+name: Build Addon
 
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - name: Setup MSVC
-      uses: ilammy/msvc-dev-cmd@v1
+    - name: Install MinGW Toolchain
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mingw-w64 cmake
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      run: |
+        cmake -B build \
+          -DCMAKE_TOOLCHAIN_FILE=mingw-w64-x86_64.cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
 
     - name: Build Project
       run: cmake --build build --config Release
@@ -27,9 +33,7 @@ jobs:
     - name: Upload Output Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: dlss5-proton-addon
+        name: dlss5-addon
         path: |
-          build/**/*.addon64
-          build/**/*.dll
-          build/Release/*.addon64
-          build/Release/*.dll
+          build/*.addon64
+          build/*.dll
