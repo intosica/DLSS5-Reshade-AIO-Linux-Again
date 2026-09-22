@@ -1,0 +1,37 @@
+[1mdiff --git a/CMakeLists.txt b/CMakeLists.txt[m
+[1mindex aa6c72d..f9871be 100644[m
+[1m--- a/CMakeLists.txt[m
+[1m+++ b/CMakeLists.txt[m
+[36m@@ -23,7 +23,7 @@[m [mif(NOT CMAKE_TOOLCHAIN_FILE)[m
+         "(shipped alongside this CMakeLists.txt) to cross-compile from Linux.")[m
+ endif()[m
+ [m
+[31m-set(FEEDER_ROOT "${CMAKE_SOURCE_DIR}/../external/DLSS5-Feeder" CACHE PATH[m
+[32m+[m[32mset(FEEDER_ROOT "${CMAKE_SOURCE_DIR}/external/DLSS5-Feeder" CACHE PATH[m
+     "Path to the DLSS5-Feeder submodule checkout (NGX SDK headers, ReShade SDK, imgui, minhook, vulkan headers).")[m
+ [m
+ if(NOT EXISTS "${FEEDER_ROOT}/external/ngx")[m
+[36m@@ -55,7 +55,7 @@[m [mtarget_compile_options(nvngx PRIVATE -O2 -Wall -Wextra)[m
+ add_library(proton-compat STATIC[m
+     src/proton-compat.cpp[m
+ )[m
+[31m-target_include_directories(proton-compat PUBLIC include)[m
+[32m+[m[32mtarget_include_directories(proton-compat PUBLIC include addon/include)[m
+ target_compile_options(proton-compat PRIVATE -O2 -Wall -Wextra -Wno-cast-function-type)[m
+ [m
+ # --- standalone-dlssnr.addon64: the ReShade add-on itself -------------------[m
+[36m@@ -74,6 +74,7 @@[m [mtarget_include_directories(standalone-dlssnr PRIVATE[m
+     "${FEEDER_ROOT}/external/vulkan"[m
+     "${FEEDER_ROOT}/external/minhook/include"[m
+     include[m
+[32m+[m[32m    addon/include[m
+ )[m
+ target_link_libraries(standalone-dlssnr PRIVATE[m
+     proton-compat[m
+[36m@@ -88,4 +89,4 @@[m [mtarget_compile_options(standalone-dlssnr PRIVATE -O2 -Wall -Wextra -Wno-unknown-[m
+ [m
+ # ReShade addons must export AddonInit/AddonUninit et al -- same def-less[m
+ # export mechanism as MSVC's __declspec(dllexport) in the source, so no[m
+[31m-# .def file is needed here either.[m
+[32m+[m[32m# .def file is needed here either.[m
+\ No newline at end of file[m
