@@ -95,7 +95,7 @@ set_target_properties(standalone-dlssnr PROPERTIES
     SUFFIX ".addon64"
     PREFIX ""
 )
-target_compile_options(standalone-dlssnr PRIVATE -O2 -Wall -Wextra -Wno-unknown-pragmas)
+target_compile_options(standalone-dlssnr PRIVATE -O2 -g -Wall -Wextra -Wno-unknown-pragmas)
 
 # ReShade addons must export AddonInit/AddonUninit et al -- same def-less
 # export mechanism as MSVC's __declspec(dllexport) in the source, so no
