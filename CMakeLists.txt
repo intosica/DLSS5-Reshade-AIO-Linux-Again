@@ -23,7 +23,7 @@ if(NOT CMAKE_TOOLCHAIN_FILE)
         "(shipped alongside this CMakeLists.txt) to cross-compile from Linux.")
 endif()
 
-set(FEEDER_ROOT "${CMAKE_SOURCE_DIR}/../external/DLSS5-Feeder" CACHE PATH
+set(FEEDER_ROOT "${CMAKE_SOURCE_DIR}/external/DLSS5-Feeder" CACHE PATH
     "Path to the DLSS5-Feeder submodule checkout (NGX SDK headers, ReShade SDK, imgui, minhook, vulkan headers).")
 
 if(NOT EXISTS "${FEEDER_ROOT}/external/ngx")
@@ -55,7 +55,7 @@ target_compile_options(nvngx PRIVATE -O2 -Wall -Wextra)
 add_library(proton-compat STATIC
     src/proton-compat.cpp
 )
-target_include_directories(proton-compat PUBLIC include)
+target_include_directories(proton-compat PUBLIC include addon/include)
 target_compile_options(proton-compat PRIVATE -O2 -Wall -Wextra -Wno-cast-function-type)
 
 # --- standalone-dlssnr.addon64: the ReShade add-on itself -------------------
@@ -74,6 +74,7 @@ target_include_directories(standalone-dlssnr PRIVATE
     "${FEEDER_ROOT}/external/vulkan"
     "${FEEDER_ROOT}/external/minhook/include"
     include
+    addon/include
 )
 target_link_libraries(standalone-dlssnr PRIVATE
     proton-compat
