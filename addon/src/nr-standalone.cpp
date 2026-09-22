@@ -34,6 +34,7 @@
 #include "../../external/DLSS5-Feeder/src/feed_vk_hook.h"
 #include "performance-telemetry.h"
 #include "aio-menu-schema.hpp"
+#include "../include/seh-shim.h"
 #include "nvof-motion-provider.hpp"
 
 #define ADDON_VERSION "2.2.3"
@@ -3112,55 +3113,81 @@ static void SetNrCreationContract()
     }
 }
 
+namespace {
+
+struct SafeCreateContext
+{
+    bool nr;
+    NVSDK_NGX_Handle **target;
+};
+
+long SafeCreateTrampoline(void *raw)
+{
+    auto *ctx = static_cast<SafeCreateContext *>(raw);
+    const NVSDK_NGX_Result result = g_bridge_create(
+        ctx->nr ? g_nr_create : g_sr_create, NeuralCommandList(),
+        ctx->nr ? kFeatureDlssNr : NVSDK_NGX_Feature_SuperSampling,
+        g_ngx_params, ctx->target);
+    return static_cast<long>(result);
+}
+
+struct SafeEvaluateContext
+{
+    bool nr;
+    NVSDK_NGX_Handle *handle;
+};
+
+long SafeEvaluateTrampoline(void *raw)
+{
+    auto *ctx = static_cast<SafeEvaluateContext *>(raw);
+    const NVSDK_NGX_Result result = g_bridge_evaluate(
+        ctx->nr ? g_nr_evaluate : g_sr_evaluate, NeuralCommandList(),
+        ctx->handle, g_ngx_params, nullptr);
+    return static_cast<long>(result);
+}
+
+struct SafeReleaseContext
+{
+    NgxReleaseFeature release;
+    NVSDK_NGX_Handle *handle;
+};
+
+long SafeReleaseTrampoline(void *raw)
+{
+    auto *ctx = static_cast<SafeReleaseContext *>(raw);
+    const NVSDK_NGX_Result result = g_bridge_release(ctx->release, ctx->handle);
+    return static_cast<long>(result);
+}
+
+} // namespace
+
 static NVSDK_NGX_Result SafeCreate(bool nr, DWORD *exception,
     NVSDK_NGX_Handle **nr_target = nullptr)
 {
-    *exception = 0;
-    __try
-    {
-        NVSDK_NGX_Handle **target = nr ?
-            (nr_target ? nr_target : &g_nr_feature) : &g_sr_feature;
-        return g_bridge_create(nr ? g_nr_create : g_sr_create, NeuralCommandList(),
-            nr ? kFeatureDlssNr : NVSDK_NGX_Feature_SuperSampling, g_ngx_params,
-            target);
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER)
-    {
-        *exception = GetExceptionCode();
-        return static_cast<NVSDK_NGX_Result>(0x7fffffff);
-    }
+    SafeCreateContext ctx{ nr, nr ? (nr_target ? nr_target : &g_nr_feature) : &g_sr_feature };
+    unsigned long code = 0;
+    const long result = SehGuardedCall(&SafeCreateTrampoline, &ctx, &code);
+    *exception = code;
+    return static_cast<NVSDK_NGX_Result>(result);
 }
 
 static NVSDK_NGX_Result SafeEvaluate(bool nr, DWORD *exception,
     NVSDK_NGX_Handle *nr_handle = nullptr)
 {
-    *exception = 0;
-    __try
-    {
-        NVSDK_NGX_Handle *handle = nr ?
-            (nr_handle ? nr_handle : g_nr_feature) : g_sr_feature;
-        return g_bridge_evaluate(nr ? g_nr_evaluate : g_sr_evaluate, NeuralCommandList(),
-            handle, g_ngx_params, nullptr);
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER)
-    {
-        *exception = GetExceptionCode();
-        return static_cast<NVSDK_NGX_Result>(0x7fffffff);
-    }
+    SafeEvaluateContext ctx{ nr, nr ? (nr_handle ? nr_handle : g_nr_feature) : g_sr_feature };
+    unsigned long code = 0;
+    const long result = SehGuardedCall(&SafeEvaluateTrampoline, &ctx, &code);
+    *exception = code;
+    return static_cast<NVSDK_NGX_Result>(result);
 }
 
 static NVSDK_NGX_Result SafeRelease(NgxReleaseFeature release, NVSDK_NGX_Handle *handle, DWORD *exception)
 {
-    *exception = 0;
-    __try
-    {
-        return g_bridge_release(release, handle);
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER)
-    {
-        *exception = GetExceptionCode();
-        return static_cast<NVSDK_NGX_Result>(0x7fffffff);
-    }
+    SafeReleaseContext ctx{ release, handle };
+    unsigned long code = 0;
+    const long result = SehGuardedCall(&SafeReleaseTrampoline, &ctx, &code);
+    *exception = code;
+    return static_cast<NVSDK_NGX_Result>(result);
 }
 
 static NVSDK_NGX_Result SafeCreateFg(DWORD *exception);
@@ -3795,34 +3822,38 @@ static void PublishOutput(ID3D12Resource *resource)
     if (old) old->Release();
 }
 
+namespace {
+
+long SafeCreateFgTrampoline(void * /*unused*/)
+{
+    const NVSDK_NGX_Result result = g_bridge_create(g_fg_create, NeuralCommandList(),
+        NVSDK_NGX_Feature_FrameGeneration, g_ngx_params, &g_fg_feature);
+    return static_cast<long>(result);
+}
+
+long SafeEvaluateFgTrampoline(void * /*unused*/)
+{
+    const NVSDK_NGX_Result result = g_bridge_evaluate(g_fg_evaluate, NeuralCommandList(),
+        g_fg_feature, g_ngx_params, nullptr);
+    return static_cast<long>(result);
+}
+
+} // namespace
+
 static NVSDK_NGX_Result SafeCreateFg(DWORD *exception)
 {
-    *exception = 0;
-    __try
-    {
-        return g_bridge_create(g_fg_create, NeuralCommandList(),
-            NVSDK_NGX_Feature_FrameGeneration, g_ngx_params, &g_fg_feature);
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER)
-    {
-        *exception = GetExceptionCode();
-        return static_cast<NVSDK_NGX_Result>(0x7fffffff);
-    }
+    unsigned long code = 0;
+    const long result = SehGuardedCall(&SafeCreateFgTrampoline, nullptr, &code);
+    *exception = code;
+    return static_cast<NVSDK_NGX_Result>(result);
 }
 
 static NVSDK_NGX_Result SafeEvaluateFg(DWORD *exception)
 {
-    *exception = 0;
-    __try
-    {
-        return g_bridge_evaluate(g_fg_evaluate, NeuralCommandList(),
-            g_fg_feature, g_ngx_params, nullptr);
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER)
-    {
-        *exception = GetExceptionCode();
-        return static_cast<NVSDK_NGX_Result>(0x7fffffff);
-    }
+    unsigned long code = 0;
+    const long result = SehGuardedCall(&SafeEvaluateFgTrampoline, nullptr, &code);
+    *exception = code;
+    return static_cast<NVSDK_NGX_Result>(result);
 }
 
 static void ClearPublishedOutput()
@@ -7770,16 +7801,16 @@ static bool InstallWindowQueryHooks()
     HMODULE user32 = GetModuleHandleW(L"user32.dll");
     if (user32 == nullptr)
         return false;
-    g_get_client_rect_target = GetProcAddress(user32, "GetClientRect");
-    g_screen_to_client_target = GetProcAddress(user32, "ScreenToClient");
-    g_client_to_screen_target = GetProcAddress(user32, "ClientToScreen");
-    g_set_cursor_target = GetProcAddress(user32, "SetCursor");
-    g_get_cursor_pos_target = GetProcAddress(user32, "GetCursorPos");
-    g_set_cursor_pos_target = GetProcAddress(user32, "SetCursorPos");
-    g_clip_cursor_target = GetProcAddress(user32, "ClipCursor");
-    g_get_clip_cursor_target = GetProcAddress(user32, "GetClipCursor");
-    g_set_window_pos_target = GetProcAddress(user32, "SetWindowPos");
-    g_move_window_target = GetProcAddress(user32, "MoveWindow");
+    g_get_client_rect_target = reinterpret_cast<void *>(GetProcAddress(user32, "GetClientRect"));
+    g_screen_to_client_target = reinterpret_cast<void *>(GetProcAddress(user32, "ScreenToClient"));
+    g_client_to_screen_target = reinterpret_cast<void *>(GetProcAddress(user32, "ClientToScreen"));
+    g_set_cursor_target = reinterpret_cast<void *>(GetProcAddress(user32, "SetCursor"));
+    g_get_cursor_pos_target = reinterpret_cast<void *>(GetProcAddress(user32, "GetCursorPos"));
+    g_set_cursor_pos_target = reinterpret_cast<void *>(GetProcAddress(user32, "SetCursorPos"));
+    g_clip_cursor_target = reinterpret_cast<void *>(GetProcAddress(user32, "ClipCursor"));
+    g_get_clip_cursor_target = reinterpret_cast<void *>(GetProcAddress(user32, "GetClipCursor"));
+    g_set_window_pos_target = reinterpret_cast<void *>(GetProcAddress(user32, "SetWindowPos"));
+    g_move_window_target = reinterpret_cast<void *>(GetProcAddress(user32, "MoveWindow"));
     if (g_get_client_rect_target == nullptr || g_screen_to_client_target == nullptr ||
         g_client_to_screen_target == nullptr || g_set_cursor_target == nullptr ||
         g_get_cursor_pos_target == nullptr ||
@@ -13152,6 +13183,7 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID)
 {
     if (reason == DLL_PROCESS_ATTACH)
     {
+        SehShimInit();
         g_self = module;
         DisableThreadLibraryCalls(module);
         InitializeCriticalSection(&g_log_lock);

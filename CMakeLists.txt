@@ -58,6 +58,16 @@ add_library(proton-compat STATIC
 target_include_directories(proton-compat PUBLIC include)
 target_compile_options(proton-compat PRIVATE -O2 -Wall -Wextra -Wno-cast-function-type)
 
+# --- seh-shim: __try/__except replacement (GCC implements neither, in C or
+# C++ mode) using AddVectoredExceptionHandler + setjmp/longjmp instead.
+# Must be compiled as C -- that's what makes this work without -fms-extensions.
+add_library(seh-shim STATIC
+    src/seh-shim.c
+)
+target_include_directories(seh-shim PUBLIC include)
+set_source_files_properties(src/seh-shim.c PROPERTIES LANGUAGE C)
+target_compile_options(seh-shim PRIVATE -O2 -Wall -Wextra)
+
 # --- standalone-dlssnr.addon64: the ReShade add-on itself -------------------
 add_library(standalone-dlssnr SHARED
     src/nr-standalone.cpp
@@ -77,6 +87,7 @@ target_include_directories(standalone-dlssnr PRIVATE
 )
 target_link_libraries(standalone-dlssnr PRIVATE
     proton-compat
+    seh-shim
     kernel32 user32 d3d9 d3d11 d3d12 dxgi d3dcompiler dcomp
 )
 set_target_properties(standalone-dlssnr PROPERTIES
