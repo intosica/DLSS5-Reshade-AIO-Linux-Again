@@ -19,6 +19,10 @@ jobs:
     - name: Update Submodules
       run: git submodule update --init --recursive
 
+    - name: Fix Header Case Sensitivity
+      run: |
+        find . -type f \( -name "*.hpp" -o -name "*.h" -o -name "*.cpp" \) -exec sed -i 's/#include <Windows.h>/#include <windows.h>/g' {} +
+
     - name: Install MinGW Toolchain
       run: |
         sudo apt-get update
