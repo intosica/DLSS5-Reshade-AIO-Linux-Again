@@ -21,6 +21,15 @@ void SehShimInit(void)
         g_handler_handle = AddVectoredExceptionHandler(1, VectoredHandler);
 }
 
+void SehShimShutdown(void)
+{
+    if (g_handler_handle)
+    {
+        RemoveVectoredExceptionHandler(g_handler_handle);
+        g_handler_handle = NULL;
+    }
+}
+
 long SehGuardedCall(SehGuardedFn fn, void *context, unsigned long *exception_code)
 {
     *exception_code = 0;

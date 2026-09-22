@@ -13368,6 +13368,7 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID)
     }
     else if (reason == DLL_PROCESS_DETACH)
     {
+        SehShimShutdown();
         ClearStartupRecoveryMarker("clean process shutdown");
         g_windowed_virtualization_active = false;
         RestoreWindowedLogicalSizeSubclass();
