@@ -19,6 +19,11 @@ jobs:
     - name: Update Submodules
       run: git submodule update --init --recursive
 
+    - name: Fix FARPROC cast in feed_vk_hook.h
+      run: |
+        sed -i 's/void \*target = GetProcAddress(lib, "vkCreateDevice");/void *target = reinterpret_cast<void *>(GetProcAddress(lib, "vkCreateDevice"));/' \
+            external/DLSS5-Feeder/src/feed_vk_hook.h
+
     - name: Fix Header Case Sensitivity
       run: |
         find . -type f \( -name "*.hpp" -o -name "*.h" -o -name "*.cpp" \) -exec sed -i 's/#include <Windows.h>/#include <windows.h>/g' {} +
