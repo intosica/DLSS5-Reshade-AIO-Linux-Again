@@ -13,7 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: recursive
+        submodules: 'recursive'
+        fetch-depth: 0
+
+    - name: Update Submodules
+      run: git submodule update --init --recursive
 
     - name: Install MinGW Toolchain
       run: |
