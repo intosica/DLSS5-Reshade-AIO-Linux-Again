@@ -29,7 +29,8 @@ jobs:
         cmake -B build \
           -DCMAKE_TOOLCHAIN_FILE=mingw-w64-x86_64.cmake \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
+          -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+          -DFEEDER_ROOT="${{ github.workspace }}/external/DLSS5-Feeder"
 
     - name: Build Project
       run: cmake --build build --config Release
