@@ -2,6 +2,9 @@
 #define NOMINMAX
 #include <windows.h>
 #include <intrin.h>
+#if defined(__GNUC__) && !defined(_MSC_VER)
+#define _ReturnAddress() __builtin_return_address(0)
+#endif
 #include <d3d9.h>
 #include <d3d11_4.h>
 #include <d3d12.h>
